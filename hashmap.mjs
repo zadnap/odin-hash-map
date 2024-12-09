@@ -33,71 +33,39 @@ class HashMap {
   }
 
   set(key, value) {
-    if (this.length() + 1 >= this.#capacity * this.#loadFactor) {
+    if (this.length() >= this.#capacity * this.#loadFactor) {
       this.#grow();
     }
 
     const hashCode = this.#hash(key);
-
-    if (this.#buckets[hashCode]) {
-      if (this.#buckets[hashCode].hasOwnProperty(key)) {
-        this.#buckets[hashCode] = { [key]: value };
-      } else {
-        this.#grow();
-        this.set(key, value);
-      }
-    } else {
-      this.#buckets[hashCode] = { [key]: value };
-    }
+    this.#buckets[hashCode] = this.#buckets[hashCode] || {};
+    this.#buckets[hashCode][key] = value;
   }
 
   get(key) {
     const hashCode = this.#hash(key);
-
-    if (hashCode < 0 || hashCode >= this.#buckets.length) {
-      throw new Error("Trying to access index out of bounds");
-    }
-
-    if (
-      this.#buckets[hashCode] &&
-      this.#buckets[hashCode].hasOwnProperty(key)
-    ) {
-      return this.#buckets[hashCode][key];
-    } else {
-      return null;
-    }
+    return this.#buckets[hashCode]?.[key] ?? null;
   }
 
   has(key) {
     const hashCode = this.#hash(key);
-
-    if (this.#buckets[hashCode] && this.#buckets[hashCode][key]) {
-      return true;
-    } else {
-      return false;
-    }
+    return Boolean(this.#buckets[hashCode]?.[key]);
   }
 
   remove(key) {
     const hashCode = this.#hash(key);
-
-    if (this.#buckets[hashCode] && this.#buckets[hashCode][key]) {
-      this.#buckets[hashCode] = {};
+    if (this.#buckets[hashCode]?.[key]) {
+      delete this.#buckets[hashCode][key];
       return true;
-    } else {
-      return false;
     }
+    return false;
   }
 
   length() {
-    let countKeyStored = 0;
-    this.#buckets.forEach((bucket) => {
-      if (bucket && Object.keys(bucket).length > 0) {
-        countKeyStored++;
-      }
-    });
-
-    return countKeyStored;
+    return this.#buckets.reduce(
+      (count, bucket) => count + (bucket ? Object.keys(bucket).length : 0),
+      0
+    );
   }
 
   clear() {
@@ -106,44 +74,23 @@ class HashMap {
   }
 
   keys() {
-    const keyArray = [];
-
-    this.#buckets.forEach((bucket) => {
-      if (bucket && Object.keys(bucket).length > 0) {
-        keyArray.push(Object.keys(bucket)[0]);
-      }
-    });
-
-    return keyArray;
+    return this.#buckets.flatMap((bucket) =>
+      bucket ? Object.keys(bucket) : []
+    );
   }
 
   values() {
-    const valueArray = [];
-
-    this.#buckets.forEach((bucket) => {
-      if (bucket && Object.keys(bucket).length > 0) {
-        valueArray.push(bucket[Object.keys(bucket)[0]]);
-      }
-    });
-
-    return valueArray;
+    return this.#buckets.flatMap((bucket) =>
+      bucket ? Object.values(bucket) : []
+    );
   }
 
   entries() {
-    const entryArray = [];
-
-    this.#buckets.forEach((bucket) => {
-      if (bucket && Object.keys(bucket).length > 0) {
-        const key = Object.keys(bucket)[0];
-        const value = bucket[Object.keys(bucket)[0]];
-
-        entryArray.push({
-          [key]: value,
-        });
-      }
-    });
-
-    return entryArray;
+    return this.#buckets.flatMap((bucket) =>
+      bucket
+        ? Object.entries(bucket).map(([key, value]) => ({ [key]: value }))
+        : []
+    );
   }
 }
 
